@@ -12,21 +12,32 @@ const RegisterPage = () => {
     // New state to track if registration was successful
     const [isRegistered, setIsRegistered] = useState(false);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsLoading(true);
-        try {
-            await apiService.post('/api/auth/register', { username, password });
-            toast.success('Registration successful!');
-            setIsRegistered(true); // Set the flag to show the success message
-        } catch (error) {
-            // Use the more specific error message from the backend if available
-            const errorMessage = error.response?.data?.message || error.response?.data || 'Registration failed. Please try again.';
-            toast.error(errorMessage);
-        } finally {
-            setIsLoading(false);
+    // ... inside RegisterPage.jsx
+const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+        await apiService.post('/api/auth/register', { username, password });
+        toast.success('Registration successful!');
+        setIsRegistered(true);
+    } catch (error) {
+        // --- THIS IS THE FIX ---
+        // Prioritize the backend's custom message. If it doesn't exist, use a generic string.
+        let errorMessage = 'Registration failed. Please try again.';
+        if (error.response && error.response.data && error.response.data.message) {
+            errorMessage = error.response.data.message;
+        } else if (error.response && error.response.data) {
+            // Handle the case where the backend sends a simple string error
+            // (like "Error: Username is already taken!")
+            errorMessage = error.response.data;
         }
-    };
+        
+        toast.error(errorMessage); // Now we are guaranteed to pass a string.
+        
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     // If registration is successful, show the success view
     if (isRegistered) {
